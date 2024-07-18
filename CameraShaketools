@@ -1,0 +1,57 @@
+import maya.cmds as cmds
+
+# ウィンドウが既に存在する場合は削除
+if cmds.window("cameraShakeWindow", exists=True):
+    cmds.deleteUI("cameraShakeWindow")
+
+# 新しいウィンドウを作成
+cmds.window("cameraShakeWindow", title="Camera Shake Controller", widthHeight=(300, 200))
+
+# レイアウトを作成
+cmds.columnLayout(adjustableColumn=True)
+
+# startFrameのスライダー
+cmds.intSliderGrp("startFrameSlider", label="Start Frame", field=True, minValue=1, maxValue=1000, value=10, dragCommand="updateCameraShakeExpression()")
+cmds.intSliderGrp("endFrameSlider", label="End Frame", field=True, minValue=1, maxValue=1000, value=50, dragCommand="updateCameraShakeExpression()")
+
+# horizontalspeedのスライダー
+cmds.floatSliderGrp("horizontalSpeedSlider", label="Horizontal Speed", field=True, minValue=0.00, maxValue=10.00, value=1.00, precision=2, dragCommand="updateCameraShakeExpression()")
+cmds.floatSliderGrp("horizontalSizeSlider", label="Horizontal Size", field=True, minValue=0.00, maxValue=10.00, value=1.00, precision=2, dragCommand="updateCameraShakeExpression()")
+
+# verticalspeedのスライダー
+cmds.floatSliderGrp("verticalSpeedSlider", label="Vertical Speed", field=True, minValue=0.00, maxValue=10.00, value=1.00, precision=2, dragCommand="updateCameraShakeExpression()")
+cmds.floatSliderGrp("verticalSizeSlider", label="Vertical Size", field=True, minValue=0.00, maxValue=10.00, value=1.00, precision=2, dragCommand="updateCameraShakeExpression()")
+
+# 適用ボタン
+cmds.button(label="Apply", command="updateCameraShakeExpression()")
+
+# ウィンドウを表示
+cmds.showWindow("cameraShakeWindow")
+
+# 設定を適用する関数
+def updateCameraShakeExpression():
+    startFrame = cmds.intSliderGrp("startFrameSlider", query=True, value=True)
+    endFrame = cmds.intSliderGrp("endFrameSlider", query=True, value=True)
+    horizontalSpeed = cmds.floatSliderGrp("horizontalSpeedSlider", query=True, value=True)
+    horizontalSize = cmds.floatSliderGrp("horizontalSizeSlider", query=True, value=True)
+    verticalSpeed = cmds.floatSliderGrp("verticalSpeedSlider", query=True, value=True)
+    verticalSize = cmds.floatSliderGrp("verticalSizeSlider", query=True, value=True)
+
+    # 既存のエクスプレッションを削除
+    if cmds.objExists("cameraShakeExpression"):
+        cmds.delete("cameraShakeExpression")
+
+    # 新しいエクスプレッションを作成
+    expression = f"""
+    if (frame >= {startFrame} && frame <= {endFrame}) {{
+        cameraShape1.horizontalShake = noise(frame * {horizontalSpeed}) * {horizontalSize};
+        cameraShape1.verticalShake = noise(frame * {verticalSpeed}) * {verticalSize};
+    }} else {{
+        cameraShape1.horizontalShake = 0;
+        cameraShape1.verticalShake = 0;
+    }}
+    """
+    cmds.expression(s=expression, name="cameraShakeExpression", object="cameraShape1", alwaysEvaluate=True)
+
+# updateCameraShakeExpression関数をグローバルに定義
+cmds.scriptJob(runOnce=True, idleEvent=lambda: cmds.evalDeferred("global updateCameraShakeExpression"))
