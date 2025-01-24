@@ -1,0 +1,61 @@
+import maya.cmds as cmds
+import maya.OpenMaya as om
+import re
+import os
+
+def check_filename(filename):
+    # 2バイト文字をチェック
+    if re.search(r'[^\x00-\x7F]', filename):
+        return False
+    return True
+
+def before_save_callback(clientData):
+    # 現在のシーンのファイル名を取得
+    filename = cmds.file(query=True, sceneName=True)
+    # ファイル名のベース名を取得（パスを除く）
+    base_filename = cmds.file(query=True, sceneName=True, shortName=True)
+    if not check_filename(base_filename):
+        # ポップアップウィンドウで警告メッセージを表示
+        result = cmds.confirmDialog(
+            title='無効なファイル名',
+            message='ファイル名に2バイト文字が含まれています。ファイル名を修正してください。',
+            button=['OK'],
+            defaultButton='OK',
+            icon='warning'
+        )
+        if result == 'OK':
+            # 保存をキャンセル
+            om.MGlobal.displayWarning("ファイル名を修正してください。")
+            cmds.file(save=False)
+            return False
+    return True
+
+def after_save_callback(clientData):
+    # 現在のシーンのファイル名を取得
+    filename = cmds.file(query=True, sceneName=True)
+    # ファイル名のベース名を取得（パスを除く）
+    base_filename = cmds.file(query=True, sceneName=True, shortName=True)
+    if not check_filename(base_filename):
+        # シーンファイルを削除
+        if os.path.exists(filename):
+            os.remove(filename)
+        # ポップアップウィンドウで通知
+        cmds.confirmDialog(
+            title='シーンファイル削除',
+            message='ファイル名に2バイト文字が含まれていたため削除しました。',
+            button=['OK'],
+            defaultButton='OK',
+            icon='warning'
+        )
+
+# コールバックを登録
+before_save_callback_id = om.MSceneMessage.addCallback(om.MSceneMessage.kBeforeSave, before_save_callback)
+after_save_callback_id = om.MSceneMessage.addCallback(om.MSceneMessage.kAfterSave, after_save_callback)
+
+# プラグインのアンロード時にコールバックを削除するための関数
+def remove_callbacks():
+    om.MSceneMessage.removeCallback(before_save_callback_id)
+    om.MSceneMessage.removeCallback(after_save_callback_id)
+
+# Mayaを終了する前にコールバックを削除
+cmds.scriptJob(event=["quitApplication", remove_callbacks])
