@@ -11,8 +11,8 @@ cmds.window("cameraShakeWindow", title="Camera Shake Controller", widthHeight=(3
 cmds.columnLayout(adjustableColumn=True)
 
 # startFrameのスライダー
-cmds.intSliderGrp("startFrameSlider", label="Start Frame", field=True, minValue=1, maxValue=1000, value=10, dragCommand="updateCameraShakeExpression()")
-cmds.intSliderGrp("endFrameSlider", label="End Frame", field=True, minValue=1, maxValue=1000, value=50, dragCommand="updateCameraShakeExpression()")
+cmds.intSliderGrp("startFrameSlider", label="Start Frame", field=True, minValue=1, maxValue=10000, value=10, dragCommand="updateCameraShakeExpression()")
+cmds.intSliderGrp("endFrameSlider", label="End Frame", field=True, minValue=1, maxValue=10000, value=50, dragCommand="updateCameraShakeExpression()")
 
 # horizontalspeedのスライダー
 cmds.floatSliderGrp("horizontalSpeedSlider", label="Horizontal Speed", field=True, minValue=0.00, maxValue=10.00, value=1.00, precision=2, dragCommand="updateCameraShakeExpression()")
@@ -36,6 +36,21 @@ def updateCameraShakeExpression():
     horizontalSize = cmds.floatSliderGrp("horizontalSizeSlider", query=True, value=True)
     verticalSpeed = cmds.floatSliderGrp("verticalSpeedSlider", query=True, value=True)
     verticalSize = cmds.floatSliderGrp("verticalSizeSlider", query=True, value=True)
+
+    # cameraShape1が存在するか確認
+    if not cmds.objExists("cameraShape1"):
+        cmds.warning("cameraShape1が存在しません。")
+        return
+
+    # horizontalShake属性がなければ追加
+    if not cmds.attributeQuery("horizontalShake", node="cameraShape1", exists=True):
+        cmds.addAttr("cameraShape1", longName="horizontalShake", attributeType="double", defaultValue=0.0)
+        cmds.setAttr("cameraShape1.horizontalShake", 0.0)
+
+    # verticalShake属性がなければ追加
+    if not cmds.attributeQuery("verticalShake", node="cameraShape1", exists=True):
+        cmds.addAttr("cameraShape1", longName="verticalShake", attributeType="double", defaultValue=0.0)
+        cmds.setAttr("cameraShape1.verticalShake", 0.0)
 
     # 既存のエクスプレッションを削除
     if cmds.objExists("cameraShakeExpression"):
