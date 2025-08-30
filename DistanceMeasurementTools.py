@@ -1,3 +1,4 @@
+import maya.cmds as cmds
 import math
 def display_vertex_distances():
     # 選択されたオブジェクトの頂点を取得
